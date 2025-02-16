@@ -37,8 +37,8 @@ declare -A lists=(
     ["EasyList"]="https://easylist.to/easylist/easylist.txt"
     ["EasyPrivacy"]="https://easylist.to/easylist/easyprivacy.txt"
     ["FanboyCookies"]="https://secure.fanboy.co.nz/fanboy-cookiemonster.txt"
-    ["FanboyAnnoyance"]="https://secure.fanboy.co.nz/fanboy-annoyance.txt"
-    ["FanboySocial"]="https://easylist.to/easylist/fanboy-social.txt"
+    #["FanboyAnnoyance"]="https://secure.fanboy.co.nz/fanboy-annoyance.txt"
+    #["FanboySocial"]="https://easylist.to/easylist/fanboy-social.txt"
 )
 
 # Backup current list
