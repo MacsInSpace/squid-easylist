@@ -1,14 +1,18 @@
 #!/bin/bash
 
+# Temporary directory
 tmp_dir=$(mktemp -d)
 
+# Clean up function
 rm_temp() {
-rm -rf "${tmp_dir}"
-rm /tmp/adblock.sed && return 0;
+    rm -rf "${tmp_dir}"
+    rm /tmp/adblock.sed
 }
 
-list=/etc/squid3/adblock.acl
+# Output list path
+list="/etc/squid/ad_block.txt"
 
+# Sed script for filtering
 cat > /tmp/adblock.sed <<'EOF'
 /.*\$.*/d;
 /\n/d;
@@ -17,7 +21,7 @@ cat > /tmp/adblock.sed <<'EOF'
 /^!.*/d;
 s/\[\]/\[.\]/g;
 s#http://#||#g;
-s/\/\//||/g
+s/\/\//||/g;
 s/^\[.*\]$//g;
 s,[+.?&/|],\\&,g;
 s#*#.*#g;
@@ -28,34 +32,30 @@ s/\\|\\|\(.*\)/\.\1/g;
 /^$/d;
 EOF
 
-mv $list "$list".old
-cd $tmp_dir
-wget -nv https://easylist.to/easylist/easylist.txt || $(mv "$list".old $list && rm_temp)
-sed -f /tmp/adblock.sed $(ls) >> $list
+# URLs for ad-blocking lists
+declare -A lists=(
+    ["EasyList"]="https://easylist.to/easylist/easylist.txt"
+    ["EasyPrivacy"]="https://easylist.to/easylist/easyprivacy.txt"
+    ["FanboyCookies"]="https://secure.fanboy.co.nz/fanboy-cookiemonster.txt"
+    ["FanboyAnnoyance"]="https://secure.fanboy.co.nz/fanboy-annoyance.txt"
+    ["FanboySocial"]="https://easylist.to/easylist/fanboy-social.txt"
+)
 
-#cleaning temps
+# Backup current list
+mv "$list" "$list.old"
+
+# Fetch and combine lists
+for key in "${!lists[@]}"; do
+    echo "Downloading ${key}..."
+    wget -q -O - "${lists[$key]}" | sed -f /tmp/adblock.sed >> "${tmp_dir}/combined.txt"
+done
+
+# Remove duplicates and save
+sort -u "${tmp_dir}/combined.txt" > "$list"
+
+# Clean up
 rm_temp
 
-systemctl reload squid
-systemctl status squid
-
-
-
-
-exit 0
-
-# URLS
-# Easy-List
-# https://easylist.to/easylist/easylist.txt
-# 
-# Easy Cookie List
-# https://secure.fanboy.co.nz/fanboy-cookiemonster.txt
-#
-# Easy Privacy
-# https://easylist.to/easylist/easyprivacy.txt
-#
-# View Fanboy's Annoyance List
-# https://secure.fanboy.co.nz/fanboy-annoyance.txt
-#
-# View Fanboy's Social Blocking List
-# https://easylist.to/easylist/fanboy-social.txt
+# Reload Squid
+systemctl reload squid && echo "Squid reloaded with updated ad-block list"
+systemctl status squid --no-pager
