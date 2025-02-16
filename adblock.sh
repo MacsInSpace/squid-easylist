@@ -35,3 +35,27 @@ sed -f /tmp/adblock.sed $(ls) >> $list
 
 #cleaning temps
 rm_temp
+
+systemctl reload squid
+systemctl status squid
+
+
+
+
+exit 0
+
+# URLS
+# Easy-List
+# https://easylist.to/easylist/easylist.txt
+# 
+# Easy Cookie List
+# https://secure.fanboy.co.nz/fanboy-cookiemonster.txt
+#
+# Easy Privacy
+# https://easylist.to/easylist/easyprivacy.txt
+#
+# View Fanboy's Annoyance List
+# https://secure.fanboy.co.nz/fanboy-annoyance.txt
+#
+# View Fanboy's Social Blocking List
+# https://easylist.to/easylist/fanboy-social.txt
