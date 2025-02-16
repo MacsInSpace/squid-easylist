@@ -1,18 +1,25 @@
 #!/bin/bash
 
-# Temporary directory
+# Array of URLs (comment out any you don't want to use)
+urls=(
+  "https://easylist.to/easylist/easylist.txt"
+  "https://secure.fanboy.co.nz/fanboy-cookiemonster.txt"
+  "https://easylist.to/easylist/easyprivacy.txt"
+  "https://secure.fanboy.co.nz/fanboy-annoyance.txt"
+  "https://easylist.to/easylist/fanboy-social.txt"
+)
+
+# Temporary directory for downloads
 tmp_dir=$(mktemp -d)
-
-# Clean up function
-rm_temp() {
-    rm -rf "${tmp_dir}"
-    rm /tmp/adblock.sed
-}
-
-# Output list path
 list="/etc/squid/ad_block.txt"
 
-# Sed script for filtering
+# Function to clean up temporary files
+rm_temp() {
+  rm -rf "${tmp_dir}"
+  rm -f /tmp/adblock.sed
+}
+
+# Create sed filter file
 cat > /tmp/adblock.sed <<'EOF'
 /.*\$.*/d;
 /\n/d;
@@ -21,7 +28,7 @@ cat > /tmp/adblock.sed <<'EOF'
 /^!.*/d;
 s/\[\]/\[.\]/g;
 s#http://#||#g;
-s/\/\//||/g;
+s/\/\//||/g
 s/^\[.*\]$//g;
 s,[+.?&/|],\\&,g;
 s#*#.*#g;
@@ -32,30 +39,28 @@ s/\\|\\|\(.*\)/\.\1/g;
 /^$/d;
 EOF
 
-# URLs for ad-blocking lists
-declare -A lists=(
-    ["EasyList"]="https://easylist.to/easylist/easylist.txt"
-    ["EasyPrivacy"]="https://easylist.to/easylist/easyprivacy.txt"
-    ["FanboyCookies"]="https://secure.fanboy.co.nz/fanboy-cookiemonster.txt"
-    #["FanboyAnnoyance"]="https://secure.fanboy.co.nz/fanboy-annoyance.txt"
-    #["FanboySocial"]="https://easylist.to/easylist/fanboy-social.txt"
-)
+# Backup old list
+if [[ -f "$list" ]]; then
+  mv "$list" "$list".old
+fi
 
-# Backup current list
-mv "$list" "$list.old"
-
-# Fetch and combine lists
-for key in "${!lists[@]}"; do
-    echo "Downloading ${key}..."
-    wget -q -O - "${lists[$key]}" | sed -f /tmp/adblock.sed >> "${tmp_dir}/combined.txt"
+# Download and process each URL
+for url in "${urls[@]}"; do
+  echo "Downloading $url..."
+  wget -q "$url" -P "$tmp_dir" || {
+    echo "Failed to download $url"
+    continue
+  }
 done
 
-# Remove duplicates and save
-sort -u "${tmp_dir}/combined.txt" > "$list"
+# Combine, filter, and remove duplicates
+cat "$tmp_dir"/* | sed -f /tmp/adblock.sed | sort -u > "$list"
 
-# Clean up
+# Clean up temporary files
 rm_temp
 
-# Reload Squid
-systemctl reload squid && echo "Squid reloaded with updated ad-block list"
+# Reload Squid and show status
+systemctl reload squid && echo "Squid reloaded successfully"
 systemctl status squid --no-pager
+
+echo "Adblock list updated at $list"
