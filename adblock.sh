@@ -30,7 +30,7 @@ EOF
 
 mv $list "$list".old
 cd $tmp_dir
-wget -nv https://easylist-downloads.adblockplus.org/easylist.txt || $(mv "$list".old $list && rm_temp)
+wget -nv https://easylist.to/easylist/easylist.txt || $(mv "$list".old $list && rm_temp)
 sed -f /tmp/adblock.sed $(ls) >> $list
 
 #cleaning temps
